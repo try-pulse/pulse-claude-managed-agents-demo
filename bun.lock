@@ -19,7 +19,7 @@
 
     "@babel/runtime": ["@babel/runtime@7.29.7", "", {}, "sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw=="],
 
-    "@pulse/agent-sdk": ["@pulse/agent-sdk@./vendor/pulse-agent-sdk-0.1.0.tgz", {}, "sha512-hwRL7C4dU6QmSddbqQnJkI4J1IpJDXr+20mxNBu4e/TSkxQF9hvbF3TglKQyg4NQHULSFp90uHJII+dzEYil5Q=="],
+    "@pulse/agent-sdk": ["@pulse/agent-sdk@./vendor/pulse-agent-sdk-0.1.0.tgz", {}, "sha512-7uPyMWM0C03WmYyCN2r95c9/M/ZuAhRqkIkjw6HYukzZSxoJ+pw8eNIorB4eFrMTDWsbUaO7sAFceXnSKRCy/Q=="],
 
     "@stablelib/base64": ["@stablelib/base64@1.0.1", "", {}, "sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ=="],
 
