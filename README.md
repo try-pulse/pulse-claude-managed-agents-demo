@@ -43,8 +43,8 @@ Tests use fake Pulse and Anthropic boundaries, so no live credentials are needed
 ## How it works
 
 1. `POST /webhook` verifies the lowercase hex `Pulse-Signature` over the raw body and checks the signed body `webhook_timestamp` within 60 seconds. The `Pulse-Timestamp` header is not signed. The SDK acknowledges before starting the callback; Pulse requires a `2xx` within 5 seconds. It deduplicates by `data.event_id`.
-2. On `created` or a normal `prompted` follow-up, the bridge posts a `thought`, opens a Claude Managed Agent event stream, sends the prompt, then relays tool use as `action` activities and the answer as a final `response`.
-3. A Pulse Stop signal interrupts the active Claude session and posts one final response. Uninstall removes stored installation tokens.
+2. On `created` or a normal `prompted` follow-up, the bridge posts a `thought`, opens a Claude Managed Agent event stream, sends the prompt, then relays tool use as `action` activities and the answer as a final `response`. The first activity on `created` is due within 10 seconds.
+3. A Pulse Stop signal interrupts the active Claude session and posts one final response within 60 seconds. Uninstall removes stored installation tokens.
 
 The other routes are `GET /` (health), `GET /oauth/authorize` (protected install), and `GET /oauth/callback` (OAuth exchange). OAuth tokens are stored in `.pulse-tokens.json` with file mode `0600`. This file and `.env.local` are ignored by Git. File token storage and in-memory Stop/deduplication state are suited to a single process; a multi-replica deployment needs shared stores.
 
