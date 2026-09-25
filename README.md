@@ -27,7 +27,7 @@ Configure these values in `.env.local`:
 | `PORT` | Local listener port; defaults to `3000` |
 | `PULSE_API_URL` | Optional Pulse API root; defaults to `https://api.trypulse.tech/api/v1` |
 
-Set the webhook URL in `pulse-agent-app.json` to `<BASE_URL>/webhook` and its OAuth redirect URL to `<BASE_URL>/oauth/callback`. Register that manifest through `POST https://api.trypulse.tech/api/v1/agent-apps`, then add the returned credentials to `.env.local`. The server validates its configuration at startup. Open `<BASE_URL>/oauth/authorize?install_secret=<INSTALL_SECRET>` as a workspace admin and approve installation. Finally, @mention or delegate an issue to the app.
+Set the webhook URL in `pulse-agent-app.json` to `<BASE_URL>/webhook` and its OAuth redirect URL to `<BASE_URL>/oauth/callback`. Register that manifest through `POST https://api.trypulse.tech/api/v1/agent-apps` with a signed-in person's session token and `X-Workspace-ID`; an app token cannot register an app. Add the returned client ID, client secret (`pulse_sk_…`), and webhook secret (`pwhsec_…`) to `.env.local`. The server validates its configuration at startup. Open `<BASE_URL>/oauth/authorize?install_secret=<INSTALL_SECRET>` as a workspace admin and approve installation. Finally, @mention or delegate an issue to the app.
 
 `BASE_URL` must be reachable from Pulse over HTTPS. For local development, use an HTTPS tunnel to the configured `PORT` and set `BASE_URL` to the tunnel's public origin.
 
@@ -42,8 +42,8 @@ Tests use fake Pulse and Anthropic boundaries, so no live credentials are needed
 
 ## How it works
 
-1. `POST /webhook` verifies the `Pulse-Signature` against the raw body and checks the signed timestamp. The SDK acknowledges quickly and deduplicates by event ID.
-2. On `created` or `prompted`, the bridge posts a `thought`, opens a Claude Managed Agent event stream, sends the prompt, then relays tool use as `action` activities and the answer as a final `response`.
+1. `POST /webhook` verifies the lowercase hex `Pulse-Signature` over the raw body and checks the signed body `webhook_timestamp` within 60 seconds. The `Pulse-Timestamp` header is not signed. The SDK acknowledges before starting the callback; Pulse requires a `2xx` within 5 seconds. It deduplicates by `data.event_id`.
+2. On `created` or a normal `prompted` follow-up, the bridge posts a `thought`, opens a Claude Managed Agent event stream, sends the prompt, then relays tool use as `action` activities and the answer as a final `response`.
 3. A Pulse Stop signal interrupts the active Claude session and posts one final response. Uninstall removes stored installation tokens.
 
 The other routes are `GET /` (health), `GET /oauth/authorize` (protected install), and `GET /oauth/callback` (OAuth exchange). OAuth tokens are stored in `.pulse-tokens.json` with file mode `0600`. This file and `.env.local` are ignored by Git. File token storage and in-memory Stop/deduplication state are suited to a single process; a multi-replica deployment needs shared stores.

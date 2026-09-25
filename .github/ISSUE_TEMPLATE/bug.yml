@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible Claude Managed Agents demo defect
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security vulnerability, use the private reporting route in SECURITY.md instead of this public form. Remove API keys, tokens, webhook secrets, and personal data from examples and logs.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior and the behavior you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest safe code or fixture that reproduces the issue.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Demo and packed SDK version or commit
+      placeholder: "Demo commit; SDK 0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Bun version and operating system
+      placeholder: "Bun 1.4 on macOS"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Redact all credentials and personal data before posting.
+      render: shell
