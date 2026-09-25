@@ -1,0 +1,6 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.pulse-tokens.json
+.DS_Store
