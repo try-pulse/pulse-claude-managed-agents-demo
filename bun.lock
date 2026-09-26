@@ -6,7 +6,7 @@
       "name": "pulse-claude-managed-agents-demo",
       "dependencies": {
         "@anthropic-ai/sdk": "^0.128.0",
-        "@try-pulse/agent-sdk": "^0.1.0",
+        "@try-pulse/agent-sdk": "^0.1.1",
       },
       "devDependencies": {
         "@types/bun": "^1.4.2",
@@ -21,7 +21,7 @@
 
     "@stablelib/base64": ["@stablelib/base64@1.0.1", "", {}, "sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ=="],
 
-    "@try-pulse/agent-sdk": ["@try-pulse/agent-sdk@0.1.0", "", {}, "sha512-GjegXMZQ5BBBBdIq9OULxpXSBuXbbcD/BpKopf3SrR2WECsBkVgYgDwhAP8Up7IHpcXN/i0IBnPiTBMijuXE+A=="],
+    "@try-pulse/agent-sdk": ["@try-pulse/agent-sdk@0.1.1", "", {}, "sha512-/1iK0TP/Z9i6XuShRKnJgv1AmobR98GWKd5xiDWF5UGTbuAQPWTIHx73D9Gw6HJNme74PweSAIH1KMXQ5cwuHg=="],
 
     "@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 
