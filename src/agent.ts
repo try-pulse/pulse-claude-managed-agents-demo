@@ -5,7 +5,7 @@ import {
   type AgentSessionPromptedEvent,
   type PulseAgentClient,
   type SessionContext,
-} from "@pulse/agent-sdk";
+} from "@try-pulse/agent-sdk";
 
 type AgentSessionEvent = AgentSessionCreatedEvent | AgentSessionPromptedEvent;
 type PulseWriter = Pick<PulseAgentClient, "thought" | "action" | "respond" | "error">;

@@ -9,7 +9,7 @@ import {
   TokenManager,
   installSecretFrom,
   type OAuthAppRevokedEvent,
-} from "@pulse/agent-sdk";
+} from "@try-pulse/agent-sdk";
 import { readConfig } from "./config";
 
 export const config = readConfig(process.env);

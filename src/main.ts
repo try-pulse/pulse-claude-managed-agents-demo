@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { PulseAgentClient, createWebhookHandler } from "@pulse/agent-sdk";
+import { PulseAgentClient, createWebhookHandler } from "@try-pulse/agent-sdk";
 import { config, handleOAuthAuthorize, handleOAuthCallback, handleRevoked, stops, tokens } from "./oauth";
 import { createAgentSessionHandler } from "./agent";
 

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type Anthropic from "@anthropic-ai/sdk";
-import type { AgentSessionCreatedEvent, AgentSessionPromptedEvent, PulseAgentClient } from "@pulse/agent-sdk";
+import type { AgentSessionCreatedEvent, AgentSessionPromptedEvent, PulseAgentClient } from "@try-pulse/agent-sdk";
 import { createAgentSessionHandler } from "../src/agent";
 
 function deferred() {

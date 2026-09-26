@@ -6,7 +6,7 @@
       "name": "pulse-claude-managed-agents-demo",
       "dependencies": {
         "@anthropic-ai/sdk": "^0.128.0",
-        "@pulse/agent-sdk": "./vendor/pulse-agent-sdk-0.1.0.tgz",
+        "@try-pulse/agent-sdk": "./vendor/try-pulse-agent-sdk-0.1.0.tgz",
       },
       "devDependencies": {
         "@types/bun": "^1.4.2",
@@ -19,9 +19,9 @@
 
     "@babel/runtime": ["@babel/runtime@7.29.7", "", {}, "sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw=="],
 
-    "@pulse/agent-sdk": ["@pulse/agent-sdk@./vendor/pulse-agent-sdk-0.1.0.tgz", {}, "sha512-7uPyMWM0C03WmYyCN2r95c9/M/ZuAhRqkIkjw6HYukzZSxoJ+pw8eNIorB4eFrMTDWsbUaO7sAFceXnSKRCy/Q=="],
-
     "@stablelib/base64": ["@stablelib/base64@1.0.1", "", {}, "sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ=="],
+
+    "@try-pulse/agent-sdk": ["@try-pulse/agent-sdk@./vendor/try-pulse-agent-sdk-0.1.0.tgz", {}, "sha512-GjegXMZQ5BBBBdIq9OULxpXSBuXbbcD/BpKopf3SrR2WECsBkVgYgDwhAP8Up7IHpcXN/i0IBnPiTBMijuXE+A=="],
 
     "@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
 

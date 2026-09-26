@@ -13,7 +13,7 @@ cp .env.example .env.local
 bun run dev
 ```
 
-The SDK is bundled in this repository as `vendor/pulse-agent-sdk-0.1.0.tgz`. It is the output of `npm pack` from `@pulse/agent-sdk` 0.1.0. Bun installs that packed artifact as a regular dependency; no SDK checkout, workspace, or registry publication is required. The committed `bun.lock` pins its checksum.
+The SDK is bundled in this repository as `vendor/try-pulse-agent-sdk-0.1.0.tgz`. It is the output of `npm pack` from `@try-pulse/agent-sdk` 0.1.0. Bun installs that packed artifact as a regular dependency; no SDK checkout, workspace, or registry publication is required. The committed `bun.lock` pins its checksum.
 
 Configure these values in `.env.local`:
 
@@ -50,4 +50,4 @@ The other routes are `GET /` (health), `GET /oauth/authorize` (protected install
 
 ## Updating the SDK artifact
 
-When a new SDK tarball is built with `npm pack` in the SDK package, copy it into `vendor/`, update the `@pulse/agent-sdk` tarball path in `package.json`, run `bun install`, and commit the new tarball and `bun.lock` together. The sample always installs the same packed artifact that an outside application would install.
+When a new SDK tarball is built with `npm pack` in the SDK package, copy it into `vendor/`, update the `@try-pulse/agent-sdk` tarball path in `package.json`, run `bun install`, and commit the new tarball and `bun.lock` together. The sample always installs the same packed artifact that an outside application would install.
