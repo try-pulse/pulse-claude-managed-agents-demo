@@ -1,53 +1,93 @@
 # Claude Managed Agents for Pulse
 
-A standalone [Bun](https://bun.sh) example that connects a [Claude Managed Agent](https://platform.claude.com/docs/en/managed-agents/overview) to a Pulse agent app. It follows the shape of [Linear's Claude Managed Agents demo](https://github.com/linear/claude-managed-agents-demo): Pulse receives an agent session webhook, the bridge starts a Claude session, and Claude's work appears as Pulse activities. This is an example, not a production deployment template.
+Connect a [Claude Managed Agent](https://platform.claude.com/docs/en/managed-agents/overview) to Pulse as an agent app. When someone delegates an issue to the app or @mentions it, Pulse opens an agent session, this bridge runs the Claude session, and Claude's work shows up in Pulse as session activities. Built with [`@try-pulse/agent-sdk`](https://www.npmjs.com/package/@try-pulse/agent-sdk) and [Bun](https://bun.sh).
 
-## Run it
+This is an example, not a production deployment template.
 
-You need Bun 1.4+, an Anthropic API key, a Claude Managed Agent ID and environment ID, and permission to register an agent app in a Pulse workspace.
+## How it works
+
+1. `POST /webhook` receives signed `AgentSessionEvent` webhooks. The SDK verifies the `Pulse-Signature` HMAC over the raw body and the signed `webhook_timestamp` (60 seconds), answers `200` right away (Pulse requires a `2xx` within 5 seconds), and deduplicates by `data.event_id`.
+2. On `created`, or a `prompted` follow-up, the bridge posts a `thought` (the first activity is due within 10 seconds), opens a Claude Managed Agent event stream, sends the prompt, relays Claude's tool use as `action` activities, and posts the answer as a final `response`.
+3. A Stop from Pulse interrupts the Claude session and posts one final response within 60 seconds. Uninstalling the app removes its stored tokens.
+
+## Prerequisites
+
+- [Bun](https://bun.sh) 1.4 or later
+- An Anthropic API key, and a Claude Managed Agent with its environment
+- A Pulse workspace where you can register an agent app, and a workspace admin to install it
+- A public HTTPS URL that reaches this server (for local development, an HTTPS tunnel such as ngrok)
+
+## Setup
+
+### 1. Install dependencies
 
 ```bash
-bun install --frozen-lockfile
-cp .env.example .env.local
-# Fill in .env.local, then:
-bun run dev
+bun install
 ```
 
-The SDK is bundled in this repository as `vendor/try-pulse-agent-sdk-0.1.0.tgz`. It is the output of `npm pack` from `@try-pulse/agent-sdk` 0.1.0. Bun installs that packed artifact as a regular dependency; no SDK checkout, workspace, or registry publication is required. The committed `bun.lock` pins its checksum.
+### 2. Register the agent app in Pulse
 
-Configure these values in `.env.local`:
+Edit `pulse-agent-app.json`: set `oauth.redirect_uris` to `<BASE_URL>/oauth/callback` and `webhook.url` to `<BASE_URL>/webhook`.
+
+In Pulse, open **Settings → API → Agent apps**, choose **Import manifest**, and paste the file. You can also send it to `POST https://api.trypulse.tech/api/v1/agent-apps` with your session token and `X-Workspace-ID`. Pulse shows the client secret (`pulse_sk_…`) and webhook secret (`pwhsec_…`) once; copy them.
+
+### 3. Configure the environment
+
+```bash
+cp .env.example .env.local
+```
 
 | Variable | Purpose |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
-| `CLAUDE_AGENT_ID`, `CLAUDE_ENVIRONMENT_ID` | Existing Claude Managed Agent and environment |
-| `PULSE_CLIENT_ID`, `PULSE_CLIENT_SECRET`, `PULSE_WEBHOOK_SECRET` | Values returned once when you register the Pulse app |
-| `INSTALL_SECRET` | Long random secret guarding `/oauth/authorize` |
-| `BASE_URL` | Public HTTPS origin reaching this server |
-| `PORT` | Local listener port; defaults to `3000` |
-| `PULSE_API_URL` | Optional Pulse API root; defaults to `https://api.trypulse.tech/api/v1` |
+| `CLAUDE_AGENT_ID`, `CLAUDE_ENVIRONMENT_ID` | Your Claude Managed Agent and environment |
+| `PULSE_CLIENT_ID`, `PULSE_CLIENT_SECRET`, `PULSE_WEBHOOK_SECRET` | From step 2 |
+| `INSTALL_SECRET` | A long random secret that guards `/oauth/authorize` |
+| `BASE_URL` | The public HTTPS origin of this server |
+| `PORT` | Local port, default `3000` |
+| `PULSE_API_URL` | Optional; defaults to `https://api.trypulse.tech/api/v1` |
 
-Set the webhook URL in `pulse-agent-app.json` to `<BASE_URL>/webhook` and its OAuth redirect URL to `<BASE_URL>/oauth/callback`. Register that manifest through `POST https://api.trypulse.tech/api/v1/agent-apps` with a signed-in person's session token and `X-Workspace-ID`; an app token cannot register an app. Add the returned client ID, client secret (`pulse_sk_…`), and webhook secret (`pwhsec_…`) to `.env.local`. The server validates its configuration at startup. Open `<BASE_URL>/oauth/authorize?install_secret=<INSTALL_SECRET>` as a workspace admin and approve installation. Finally, @mention or delegate an issue to the app.
+### 4. Start the server
 
-`BASE_URL` must be reachable from Pulse over HTTPS. For local development, use an HTTPS tunnel to the configured `PORT` and set `BASE_URL` to the tunnel's public origin.
+```bash
+bun run dev
+```
 
-## Verify
+The server validates its configuration at startup.
+
+### 5. Install the app in your workspace
+
+As a workspace admin, open `<BASE_URL>/oauth/authorize?install_secret=<INSTALL_SECRET>`. This starts OAuth with `actor=app`: Pulse shows the consent screen, you pick the teams the app may work in, and Pulse creates the app's own user.
+
+### 6. Use it
+
+Delegate an issue to the app, or @mention it in a comment. Follow the session in the issue's agent panel; reply there to send a follow-up, or press Stop.
+
+## Tests
 
 ```bash
 bun test
 bun run typecheck
 ```
 
-Tests use fake Pulse and Anthropic boundaries, so no live credentials are needed. They cover successful response, Stop, failure reporting, and startup configuration.
+The tests use fake Pulse and Anthropic boundaries, so they need no credentials. They cover a successful response, Stop, failure reporting and startup configuration.
 
-## How it works
+## Project structure
 
-1. `POST /webhook` verifies the lowercase hex `Pulse-Signature` over the raw body and checks the signed body `webhook_timestamp` within 60 seconds. The `Pulse-Timestamp` header is not signed. The SDK acknowledges before starting the callback; Pulse requires a `2xx` within 5 seconds. It deduplicates by `data.event_id`.
-2. On `created` or a normal `prompted` follow-up, the bridge posts a `thought`, opens a Claude Managed Agent event stream, sends the prompt, then relays tool use as `action` activities and the answer as a final `response`. The first activity on `created` is due within 10 seconds.
-3. A Pulse Stop signal interrupts the active Claude session and posts one final response within 60 seconds. Uninstall removes stored installation tokens.
+```
+src/
+  main.ts     HTTP server: /, /webhook, /oauth/authorize, /oauth/callback
+  agent.ts    Agent session handling: Claude run, activities, Stop
+  oauth.ts    Install flow, token storage, uninstall
+  config.ts   Environment validation
+test/         Tests with fake Pulse and Anthropic clients
+pulse-agent-app.json   Agent app manifest
+```
 
-The other routes are `GET /` (health), `GET /oauth/authorize` (protected install), and `GET /oauth/callback` (OAuth exchange). OAuth tokens are stored in `.pulse-tokens.json` with file mode `0600`. This file and `.env.local` are ignored by Git. File token storage and in-memory Stop/deduplication state are suited to a single process; a multi-replica deployment needs shared stores.
+OAuth tokens are stored in `.pulse-tokens.json` (mode `0600`); it and `.env.local` are ignored by Git. File token storage and in-memory Stop and deduplication state suit a single process; run several replicas only with shared stores.
 
-## Updating the SDK artifact
+## Learn more
 
-When a new SDK tarball is built with `npm pack` in the SDK package, copy it into `vendor/`, update the `@try-pulse/agent-sdk` tarball path in `package.json`, run `bun install`, and commit the new tarball and `bun.lock` together. The sample always installs the same packed artifact that an outside application would install.
+- [Pulse agent developer docs](https://trypulse.tech/docs/developers/agents)
+- [`@try-pulse/agent-sdk`](https://github.com/try-pulse/pulse-agent-sdk)
+- [Scout](https://github.com/try-pulse/pulse-agent-scout), a sample agent without an LLM
