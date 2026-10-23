@@ -12,7 +12,7 @@ This is an example, not a production deployment template.
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) 1.4 or later
+- [Bun](https://bun.sh) 1.4.4
 - An Anthropic API key, and a Claude Managed Agent with its environment
 - A Pulse workspace where you can register an agent app, and a workspace admin to install it
 - A public HTTPS URL that reaches this server (for local development, an HTTPS tunnel such as ngrok)
