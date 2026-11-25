@@ -18,82 +18,57 @@ export function createAgentSessionHandler(deps: {
   environmentId: string;
 }) {
   const { anthropic, pulseForEvent, agentId, environmentId } = deps;
-  // The Claude session currently answering each Pulse session, so Stop can interrupt it.
-  const runningClaudeSessions = new Map<string, string>();
+  const turns = new Map<string, Promise<unknown>>();
 
-  async function stopSession(pulse: PulseWriter, sessionId: string) {
-    const claudeSessionId = runningClaudeSessions.get(sessionId);
-    if (claudeSessionId) {
-      await anthropic.beta.sessions.events
-        .send(claudeSessionId, {
-          events: [{ type: "user.interrupt" }],
-          betas: ["managed-agents-2026-04-01"],
-        })
-        .catch((err) => console.error(`[agent] Interrupt failed for ${claudeSessionId}:`, err));
-    }
+  async function runTurn(event: AgentSessionEvent, { signal }: SessionContext, pulse: PulseWriter) {
+    const sessionId = event.data.agent_session.id;
+    let interrupt: (() => void) | undefined;
     try {
-      await pulse.respond(sessionId, "Stopped. I made no further changes.");
-    } catch (err) {
-      if (!isSessionEnded(err)) throw err;
-    }
-  }
-
-  return async function handleAgentSession(
-    event: AgentSessionEvent,
-    ctx: SessionContext & { isStop?: boolean }
-  ) {
-    const { agent_session: agentSession } = event.data;
-    const sessionId = agentSession.id;
-
-    console.log(`[agent] Processing session ${sessionId}, action=${event.action}`);
-
-    const pulse = pulseForEvent(event);
-
-    // Stop: interrupt Claude, then post exactly one final activity
-    if (ctx.isStop) {
-      await stopSession(pulse, sessionId);
-      return;
-    }
-
-    // Acknowledge quickly with a thought
-    await pulse.thought(sessionId, "Processing your request...");
-
-    // Build the prompt from the webhook context
-    const prompt = buildPrompt(event);
-
-    try {
-      // Create a Claude Managed Agent session
+      signal.throwIfAborted();
+      await pulse.thought(sessionId, "Processing your request...", { signal });
+      signal.throwIfAborted();
       const claudeSession = await anthropic.beta.sessions.create({
         agent: { type: "agent", id: agentId },
         environment_id: environmentId,
         betas: ["managed-agents-2026-04-01"],
-      });
-      runningClaudeSessions.set(sessionId, claudeSession.id);
+      }, { signal });
+      interrupt = () => {
+        void anthropic.beta.sessions.events.send(claudeSession.id, {
+          events: [{ type: "user.interrupt" }],
+          betas: ["managed-agents-2026-04-01"],
+        }).catch((err) => console.error(`[agent] Interrupt failed for ${claudeSession.id}:`, err));
+      };
+      // Stop can arrive before Claude returns its session ID.
+      if (signal.aborted) {
+        interrupt();
+        return;
+      }
+      signal.addEventListener("abort", interrupt, { once: true });
 
       console.log(`[agent] Claude session created: ${claudeSession.id}`);
 
       // Open stream before sending message
       const stream = await anthropic.beta.sessions.events.stream(claudeSession.id, {
         betas: ["managed-agents-2026-04-01"],
-      });
+      }, { signal });
 
-      // Send the user message
+      signal.throwIfAborted();
       await anthropic.beta.sessions.events.send(claudeSession.id, {
         events: [
           {
             type: "user.message",
-            content: [{ type: "text", text: prompt }],
+            content: [{ type: "text", text: buildPrompt(event) }],
           },
         ],
         betas: ["managed-agents-2026-04-01"],
-      });
+      }, { signal });
 
       // Stream Claude's response and relay to Pulse
       let responseText = "";
 
       for await (const event of stream) {
         // Stopped: stop relaying; the stop handler interrupts Claude and posts the final activity
-        if (ctx.signal.aborted) break;
+        if (signal.aborted) break;
         if (event.type === "agent.message") {
           for (const block of event.content) {
             if (block.type === "text") {
@@ -109,7 +84,7 @@ export function createAgentSessionHandler(deps: {
           await pulse.action(
             sessionId,
             { action: event.name || "Processing", parameter: null },
-            { ephemeral: true, signal: ctx.signal }
+            { ephemeral: true, signal }
           );
         } else if (event.type === "session.status_terminated") {
           break;
@@ -122,26 +97,49 @@ export function createAgentSessionHandler(deps: {
       }
 
       // Stopped while streaming: the stop handler posts the final activity
-      if (ctx.signal.aborted) return;
+      if (signal.aborted) return;
 
       // Post the final response
       await pulse.respond(
         sessionId,
         responseText.trim() || "I finished without a written answer.",
-        { signal: ctx.signal }
+        { signal }
       );
 
       console.log(`[agent] Session ${sessionId} completed`);
     } catch (err) {
       // Pulse ended the session (uninstall, team removed, issue deleted): stop, post nothing
-      if (isSessionEnded(err) || ctx.signal.aborted) return;
+      if (isSessionEnded(err) || signal.aborted) return;
       console.error(`[agent] Error in session ${sessionId}:`, err);
       await pulse.error(
         sessionId,
-        `Agent encountered an error: ${err instanceof Error ? err.message : String(err)}`
+        `Agent encountered an error: ${err instanceof Error ? err.message : String(err)}`,
+        { signal }
       );
     } finally {
-      runningClaudeSessions.delete(sessionId);
+      if (interrupt) signal.removeEventListener("abort", interrupt);
+    }
+  }
+
+  return async function handleAgentSession(event: AgentSessionEvent, ctx: SessionContext & { isStop?: boolean }) {
+    const sessionId = event.data.agent_session.id;
+    const pulse = pulseForEvent(event);
+    let turn: Promise<unknown>;
+    if (ctx.isStop) {
+      // Bypass the cancelled queue. A reopened turn must wait for this final write.
+      turn = pulse.respond(sessionId, "Stopped. I made no further changes.").catch((err) => {
+        if (!isSessionEnded(err)) throw err;
+      });
+    } else {
+      const prior = turns.get(sessionId) ?? Promise.resolve();
+      const run = () => runTurn(event, ctx, pulse);
+      turn = prior.then(run, run);
+    }
+    turns.set(sessionId, turn);
+    try {
+      await turn;
+    } finally {
+      if (turns.get(sessionId) === turn) turns.delete(sessionId);
     }
   };
 }

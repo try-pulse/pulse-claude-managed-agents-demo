@@ -3,7 +3,7 @@
   "module": "src/main.ts",
   "type": "module",
   "private": true,
-  "packageManager": "bun@1.4.4",
+  "packageManager": "bun@1.4.5",
   "license": "MIT",
   "scripts": {
     "dev": "bun run --hot src/main.ts",
@@ -12,11 +12,11 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "@types/bun": "1.4.4",
-    "typescript": "^5.9.3"
+    "@types/bun": "1.4.5",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
-    "@try-pulse/agent-sdk": "^0.1.1"
+    "@anthropic-ai/sdk": "^1.14.0",
+    "@try-pulse/agent-sdk": "^0.1.1 || ^0.2.0"
   }
 }
